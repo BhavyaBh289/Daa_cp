@@ -8,6 +8,9 @@ class Student implements Serializable{
         this.id = id;
         this.name = name;
     }
+    public void updateStudentData(String newName) {
+        this.name = newName;
+    }
     public static void show(Student s){
     System.out.println("Student's name is "+s.name);
     }
@@ -158,7 +161,162 @@ class BTree implements Serializable{
     public Student Search(int k) {
         return Search(root, k);
     }
+    public void deleteRecord(int key) {
+        root = delete(root, key);
+    }
 
+    private Node delete(Node x, int key) {
+        if (x == null) {
+            return null;
+        }
+
+        int pos = x.Find(key);
+        if (pos != -1) {
+            if (x.leaf) {
+                for (int i = pos + 1; i < x.n; i++) {
+                    x.key[i - 1] = x.key[i];
+                    x.students[i - 1] = x.students[i];
+                }
+                x.n--;
+                return x;
+            } else {
+                if (x.child[pos].n >= T) {
+                    Node pred = x.child[pos];
+                    while (!pred.leaf) {
+                        pred = pred.child[pred.n];
+                    }
+                    x.key[pos] = pred.key[pred.n - 1];
+                    x.students[pos] = pred.students[pred.n - 1];
+                    x.child[pos] = delete(x.child[pos], pred.key[pred.n - 1]);
+                } else if (x.child[pos + 1].n >= T) {
+                    Node succ = x.child[pos + 1];
+                    while (!succ.leaf) {
+                        succ = succ.child[0];
+                    }
+                    x.key[pos] = succ.key[0];
+                    x.students[pos] = succ.students[0];
+                    x.child[pos + 1] = delete(x.child[pos + 1], succ.key[0]);
+                } else {
+                    merge(x, pos);
+                    x = delete(x, key);
+                }
+                return x;
+            }
+        } else {
+            int i = 0;
+            while (i < x.n && key > x.key[i]) {
+                i++;
+            }
+            if (x.child[i] != null && x.child[i].n < T) {
+                if (i > 0 && x.child[i - 1].n >= T) {
+                    x.child[i] = borrowFromPrev(x, i);
+                } else if (i < x.n && x.child[i + 1].n >= T) {
+                    x.child[i] = borrowFromNext(x, i);
+                } else {
+                    if (i < x.n) {
+                        merge(x, i);
+                    } else {
+                        merge(x, i - 1);
+                    }
+                }
+            }
+            x.child[i] = delete(x.child[i], key);
+            return x;
+        }
+    }
+
+    private Node borrowFromPrev(Node x, int idx) {
+        Node child = x.child[idx];
+        Node sibling = x.child[idx - 1];
+
+        for (int i = child.n - 1; i >= 0; i--) {
+            child.key[i + 1] = child.key[i];
+            child.students[i + 1] = child.students[i];
+        }
+
+        if (!child.leaf) {
+            for (int i = child.n; i >= 0; i--) {
+                child.child[i + 1] = child.child[i];
+            }
+        }
+
+        child.key[0] = x.key[idx - 1];
+        child.students[0] = x.students[idx - 1];
+
+        if (!child.leaf) {
+            child.child[0] = sibling.child[sibling.n];
+        }
+
+        x.key[idx - 1] = sibling.key[sibling.n - 1];
+        x.students[idx - 1] = sibling.students[sibling.n - 1];
+
+        child.n++;
+        sibling.n--;
+
+        return child;
+    }
+
+    private Node borrowFromNext(Node x, int idx) {
+        Node child = x.child[idx];
+        Node sibling = x.child[idx + 1];
+
+        child.key[child.n] = x.key[idx];
+        child.students[child.n] = x.students[idx];
+
+        if (!child.leaf) {
+            child.child[child.n + 1] = sibling.child[0];
+        }
+
+        x.key[idx] = sibling.key[0];
+        x.students[idx] = sibling.students[0];
+
+        for (int i = 1; i < sibling.n; i++) {
+            sibling.key[i - 1] = sibling.key[i];
+            sibling.students[i - 1] = sibling.students[i];
+        }
+
+        if (!sibling.leaf) {
+            for (int i = 1; i <= sibling.n; i++) {
+                sibling.child[i - 1] = sibling.child[i];
+            }
+        }
+
+        child.n++;
+        sibling.n--;
+
+        return child;
+    }
+
+    private void merge(Node x, int idx) {
+        Node child = x.child[idx];
+        Node sibling = x.child[idx + 1];
+
+        child.key[T - 1] = x.key[idx];
+        child.students[T - 1] = x.students[idx];
+
+        for (int i = 0; i < sibling.n; i++) {
+            child.key[i + T] = sibling.key[i];
+            child.students[i + T] = sibling.students[i];
+        }
+
+        if (!child.leaf) {
+            for (int i = 0; i <= sibling.n; i++) {
+                child.child[i + T] = sibling.child[i];
+            }
+        }
+
+        for (int i = idx + 1; i < x.n; i++) {
+            x.key[i - 1] = x.key[i];
+            x.students[i - 1] = x.students[i];
+        }
+
+        for (int i = idx + 2; i <= x.n; i++) {
+            x.child[i - 1] = x.child[i];
+        }
+
+        child.n += sibling.n + 1;
+        x.n--;
+    }
     public void saveToFile(String filename) {
         try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
             out.writeObject(this);
@@ -167,7 +325,8 @@ class BTree implements Serializable{
             System.err.println("Error saving BTree to" + filename+" file: " + e.getMessage());
         }
     }
-     public static BTree loadFromFile(String filename) {
+
+    public static BTree loadFromFile(String filename) {
         try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
             BTree tree = (BTree) in.readObject();
             System.out.println("BTree loaded successfully from " + filename);
@@ -175,6 +334,16 @@ class BTree implements Serializable{
         } catch (IOException | ClassNotFoundException e) {
             System.err.println("Error loading BTree from file: " + e.getMessage());
             return null;
+        }
+    }
+
+    public void updateStudent(int key, String newName) {
+        Student student = Search(root, key);
+        if (student != null) {
+            student.updateStudentData(newName);
+            System.out.println("Student with key " + key + " updated successfully.");
+        } else {
+            System.out.println("Student with key " + key + " not found.");
         }
     }
 }
@@ -187,6 +356,9 @@ public class test3{
         tree.saveToFile("btree_data.ser");
         BTree loadedTree = BTree.loadFromFile("btree_data.ser");
         Student.show(loadedTree.Search(10));
+        loadedTree.updateStudent(10, "Alice Smith");
+        Student.show(loadedTree.Search(10));
+
     }
 }
 
