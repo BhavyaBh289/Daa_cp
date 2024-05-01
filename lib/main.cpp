@@ -4,30 +4,25 @@
 
 using namespace std;
 
-class Authentication
-{
+class Authentication{
     string userName;
     string userPassword;
     int loginAttempt = 0;
 
 public:
-    bool login_status()
-    {
-        while (loginAttempt < 5)
-        {
+    bool login_status(){
+        while (loginAttempt < 5){
             cout << "Please enter your user name: ";
             cin >> userName;
             cout << "Please enter your user password: ";
             cin >> userPassword;
 
-            if (userName == "b" && userPassword == "1")
-            {
+            if (userName == "b" && userPassword == "1"){
                 cout << "Welcome Team TY-70!\n";
                 cout << "You are now logged in!\n\n";
                 return true;
             }
-            else
-            {
+            else{
                 cout << "Invalid login attempt. Please try again.\n\n"
                      << '\n';
                 loginAttempt++;
@@ -38,8 +33,7 @@ public:
     }
 };
 
-struct student
-{
+struct student{
     int key; // roll no.
     char first_name[50], last_name[50];
     char course[100];
@@ -47,8 +41,7 @@ struct student
 };
 
 // A BTree node
-class BTreeNode
-{
+class BTreeNode{
     student *keys; // An array of keys
     int t;         // Minimum degree
     BTreeNode **C; // An array of child pointers
@@ -60,8 +53,7 @@ public:
 
     void traverse();
 
-    void addStudentToCSV(student s)
-    {
+    void addStudentToCSV(student s){
         // Open file in append mode
         ofstream file("students.csv", ios::app);
 
@@ -102,29 +94,24 @@ public:
 
     void merge(int idx);
 
-    // to access private members
     friend class BTree;
 };
 
-class BTree
-{
+class BTree{
     BTreeNode *root; // root node
     int t;           // Minimum degree
 public:
-    BTree(int _t)
-    {
+    BTree(int _t){
         root = NULL;
         t = _t;
     }
 
-    void traverse()
-    {
+    void traverse(){
         if (root != NULL)
             root->traverse();
     }
 
-    BTreeNode *search(student k)
-    {
+    BTreeNode *search(student k){
         return (root == NULL) ? NULL : root->search(k);
     }
 
@@ -135,8 +122,7 @@ public:
     BTreeNode *searchh(int key);
 };
 
-BTreeNode::BTreeNode(int t1, bool leaf1)
-{
+BTreeNode::BTreeNode(int t1, bool leaf1){
     // Copy the given minimum degree and leaf property
     t = t1;
     leaf = leaf1;
@@ -148,32 +134,24 @@ BTreeNode::BTreeNode(int t1, bool leaf1)
     n = 0;
 }
 
-int BTreeNode::findKey(student k)
-{
+int BTreeNode::findKey(student k){
     int idx = 0;
     while (idx < n && keys[idx].key < k.key)
         ++idx;
     return idx;
 }
 
-void BTreeNode::remove(student k)
-{
+void BTreeNode::remove(student k){
     int idx = findKey(k);
 
-    if (idx < n && keys[idx].key == k.key)
-    {
-        // If the node is a leaf node - removeFromLeaf is called
-        // Otherwise, removeFromNonLeaf function is called
+    if (idx < n && keys[idx].key == k.key){
         if (leaf)
             removeFromLeaf(idx);
         else
             removeFromNonLeaf(idx);
     }
-    else
-    {
-        // If leaf node, then the key is not present in tree
-        if (leaf)
-        {
+    else{
+        if (leaf){
             cout << "The key " << k.key << " is does not exist in the tree\n";
             return;
         }
@@ -191,8 +169,7 @@ void BTreeNode::remove(student k)
     return;
 }
 
-void BTreeNode::removeFromLeaf(int idx)
-{
+void BTreeNode::removeFromLeaf(int idx){
 
     for (int i = idx + 1; i < n; ++i)
         keys[i - 1] = keys[i];
@@ -202,35 +179,30 @@ void BTreeNode::removeFromLeaf(int idx)
     return;
 }
 
-void BTreeNode::removeFromNonLeaf(int idx)
-{
+void BTreeNode::removeFromNonLeaf(int idx){
 
     int k = keys[idx].key;
 
-    if (C[idx]->n >= t)
-    {
+    if (C[idx]->n >= t){
         int pred = getPred(idx);
         keys[idx].key = pred;
         C[idx]->remove(keys[idx]);
     }
 
-    else if (C[idx + 1]->n >= t)
-    {
+    else if (C[idx + 1]->n >= t){
         int succ = getSucc(idx);
         keys[idx].key = succ;
         C[idx + 1]->remove(keys[idx]);
     }
 
-    else
-    {
+    else{
         merge(idx);
         C[idx]->remove(keys[idx]);
     }
     return;
 }
 
-int BTreeNode::getPred(int idx)
-{
+int BTreeNode::getPred(int idx){
     BTreeNode *cur = C[idx];
     while (!cur->leaf)
         cur = cur->C[cur->n];
@@ -238,26 +210,22 @@ int BTreeNode::getPred(int idx)
     return cur->keys[cur->n - 1].key;
 }
 
-int BTreeNode::getSucc(int idx)
-{
+int BTreeNode::getSucc(int idx){
     BTreeNode *cur = C[idx + 1];
     while (!cur->leaf)
         cur = cur->C[0];
 
-    // Return the first key of the leaf
     return cur->keys[0].key;
 }
 
-void BTreeNode::fill(int idx)
-{
+void BTreeNode::fill(int idx){
     if (idx != 0 && C[idx - 1]->n >= t)
         borrowFromPrev(idx);
 
     else if (idx != n && C[idx + 1]->n >= t)
         borrowFromNext(idx);
 
-    else
-    {
+    else{
         if (idx != n)
             merge(idx);
         else
@@ -266,8 +234,7 @@ void BTreeNode::fill(int idx)
     return;
 }
 
-void BTreeNode::borrowFromPrev(int idx)
-{
+void BTreeNode::borrowFromPrev(int idx){
 
     BTreeNode *child = C[idx];
     BTreeNode *sibling = C[idx - 1];
@@ -275,8 +242,7 @@ void BTreeNode::borrowFromPrev(int idx)
     for (int i = child->n - 1; i >= 0; --i)
         child->keys[i + 1].key = child->keys[i].key;
 
-    if (!child->leaf)
-    {
+    if (!child->leaf){
         for (int i = child->n; i >= 0; --i)
             child->C[i + 1] = child->C[i];
     }
@@ -294,8 +260,7 @@ void BTreeNode::borrowFromPrev(int idx)
     return;
 }
 
-void BTreeNode::borrowFromNext(int idx)
-{
+void BTreeNode::borrowFromNext(int idx){
 
     BTreeNode *child = C[idx];
     BTreeNode *sibling = C[idx + 1];
@@ -310,8 +275,7 @@ void BTreeNode::borrowFromNext(int idx)
     for (int i = 1; i < sibling->n; ++i)
         sibling->keys[i - 1].key = sibling->keys[i].key;
 
-    if (!sibling->leaf)
-    {
+    if (!sibling->leaf){
         for (int i = 1; i <= sibling->n; ++i)
             sibling->C[i - 1] = sibling->C[i];
     }
@@ -322,8 +286,7 @@ void BTreeNode::borrowFromNext(int idx)
     return;
 }
 
-void BTreeNode::merge(int idx)
-{
+void BTreeNode::merge(int idx){
     BTreeNode *child = C[idx];
     BTreeNode *sibling = C[idx + 1];
 
@@ -332,8 +295,7 @@ void BTreeNode::merge(int idx)
     for (int i = 0; i < sibling->n; ++i)
         child->keys[i + t].key = sibling->keys[i].key;
 
-    if (!child->leaf)
-    {
+    if (!child->leaf){
         for (int i = 0; i <= sibling->n; ++i)
             child->C[i + t] = sibling->C[i];
     }
@@ -351,20 +313,16 @@ void BTreeNode::merge(int idx)
     return;
 }
 
-void BTree::insert(student k)
-{
-    if (root == NULL)
-    {
+void BTree::insert(student k){
+    if (root == NULL){
         root = new BTreeNode(t, true);
         root->keys[0] = k;
         // root->keys[0].key = k.key;
         root->n = 1;
     }
-    else
-    {
+    else{
 
-        if (root->n == 2 * t - 1)
-        {
+        if (root->n == 2 * t - 1){
             BTreeNode *s = new BTreeNode(t, false);
 
             s->C[0] = root;
@@ -383,16 +341,13 @@ void BTree::insert(student k)
     }
 }
 
-void BTreeNode::insertNonFull(student k)
-{
+void BTreeNode::insertNonFull(student k){
 
     int i = n - 1;
 
-    if (leaf == true)
-    {
+    if (leaf == true){
 
-        while (i >= 0 && keys[i].key > k.key)
-        {
+        while (i >= 0 && keys[i].key > k.key){
             keys[i + 1] = keys[i];
             i--;
         }
@@ -400,14 +355,12 @@ void BTreeNode::insertNonFull(student k)
         keys[i + 1] = k;
         n = n + 1;
     }
-    else
-    {
+    else{
 
         while (i >= 0 && keys[i].key > k.key)
             i--;
 
-        if (C[i + 1]->n == 2 * t - 1)
-        {
+        if (C[i + 1]->n == 2 * t - 1){
             splitChild(i + 1, C[i + 1]);
 
             if (keys[i + 1].key < k.key)
@@ -417,8 +370,7 @@ void BTreeNode::insertNonFull(student k)
     }
 }
 
-void BTreeNode::splitChild(int i, BTreeNode *y)
-{
+void BTreeNode::splitChild(int i, BTreeNode *y){
 
     BTreeNode *z = new BTreeNode(y->t, y->leaf);
     z->n = t - 1;
@@ -426,8 +378,7 @@ void BTreeNode::splitChild(int i, BTreeNode *y)
     for (int j = 0; j < t - 1; j++)
         z->keys[j].key = y->keys[j + t].key;
 
-    if (y->leaf == false)
-    {
+    if (y->leaf == false){
         for (int j = 0; j < t; j++)
             z->C[j] = y->C[j + t];
     }
@@ -447,11 +398,9 @@ void BTreeNode::splitChild(int i, BTreeNode *y)
     n = n + 1;
 }
 
-void BTreeNode::traverse()
-{
+void BTreeNode::traverse(){
     int i;
-    for (i = 0; i < n; i++)
-    {
+    for (i = 0; i < n; i++){
 
         if (leaf == false)
             C[i]->traverse();
@@ -461,30 +410,24 @@ void BTreeNode::traverse()
         cout << "Course: " << keys[i].course << endl;
         cout << "Hostel Name: " << keys[i].hostel_name << endl
              << endl;
-        // cout << " " << keys[i].key;
         addStudentToCSV(keys[i]);
     }
 
-    // Print the subtree rooted with last child
     if (leaf == false)
         C[i]->traverse();
 }
 
-BTreeNode *BTree::searchh(int key)
-{
+BTreeNode *BTree::searchh(int key){
     BTreeNode *node = root;
 
-    while (node != NULL)
-    {
+    while (node != NULL){
 
         int i = 0;
-        while (i < node->n && key > node->keys[i].key)
-        {
+        while (i < node->n && key > node->keys[i].key){
             i++;
         }
 
-        if (i < node->n && key == node->keys[i].key)
-        {
+        if (i < node->n && key == node->keys[i].key){
             cout << "Record: " << i + 1 << endl;
             cout << "First Name: " << node->keys[i].first_name << endl;
             cout << "Last Name: " << node->keys[i].last_name << endl;
@@ -494,15 +437,13 @@ BTreeNode *BTree::searchh(int key)
             return node;
         }
 
-        else if (node->leaf)
-        {
+        else if (node->leaf){
             cout << "\n\t\t\tData Not Found\n"
                  << endl;
             return NULL;
         }
 
-        else
-        {
+        else{
             node = node->C[i];
         }
     }
@@ -512,8 +453,7 @@ BTreeNode *BTree::searchh(int key)
     return NULL;
 }
 
-BTreeNode *BTreeNode::search(student k)
-{
+BTreeNode *BTreeNode::search(student k){
 
     int i = 0;
     while (i < n && k.key > keys[i].key)
@@ -528,18 +468,15 @@ BTreeNode *BTreeNode::search(student k)
     return C[i]->search(k);
 }
 
-void BTree::remove(student k)
-{
-    if (!root)
-    {
+void BTree::remove(student k){
+    if (!root){
         cout << "The tree is empty\n";
         return;
     }
 
     root->remove(k);
 
-    if (root->n == 0)
-    {
+    if (root->n == 0){
         BTreeNode *tmp = root;
         if (root->leaf)
             root = NULL;
@@ -551,8 +488,9 @@ void BTree::remove(student k)
     return;
 }
 
-int main()
-{
+
+
+int main(){
 
     Authentication auth;
     bool isLoggedIn = false;
@@ -564,10 +502,8 @@ int main()
     long int recsize;
     recsize = sizeof(e);
 
-    while (1)
-    {
-        if (isLoggedIn == true or auth.login_status() == true)
-        {
+    while (1){
+        if (isLoggedIn == true or auth.login_status() == true){
             isLoggedIn = true;
             cout << "\t\t====== STUDENT DATABASE MANAGEMENT SYSTEM ======";
             cout << "\n\n                                          ";
@@ -579,13 +515,9 @@ int main()
             cout << "\n \t\t\t 5. Exit   Program";
             cout << "\n\n";
             cout << "\t\t\t Select Your Choice :=> ";
-            // fflush(stdin);
-            // scanf("%c", choice);
             cin >> choice;
-            switch (choice)
-            {
-            case '0':
-            {
+            switch (choice){
+            case '0':{
                 cout << "Enter Roll number to search: ";
                 int r;
                 cin >> r;
@@ -594,8 +526,7 @@ int main()
             }
             break;
 
-            case '1':
-            {
+            case '1':{
                 cout << "Enter the roll no : ";
                 cin >> e.key;
                 cout << "Enter the First Name : ";
@@ -615,8 +546,7 @@ int main()
             }
             break;
 
-            case '2':
-            {
+            case '2':{
                 t.traverse();
                 if (!cin)
                     cin.clear();
@@ -624,20 +554,17 @@ int main()
             }
             break;
 
-            case '3':
-            {
+            case '3':{
                 cout << "Enter the roll no: ";
                 cin >> e.key;
-                if (t.search(e) == NULL)
-                {
+                if (t.search(e) == NULL){
                     cout << "Student's data with this roll no. is not present in the database" << endl;
                 }
-                else
-                {
+                else{
                     int key = e.key;
                     t.remove(e);
                     e.key = key;
-                    cout << "Enter the Firt Name : ";
+                    cout << "Enter the First Name : ";
                     cin >> e.first_name;
                     cout << "Enter the Last Name : ";
                     cin >> e.last_name;
@@ -653,8 +580,7 @@ int main()
             }
             break;
 
-            case '4':
-            {
+            case '4':{
                 cout << "Enter the roll no: ";
                 cin >> e.key;
                 t.remove(e);
@@ -664,8 +590,7 @@ int main()
             }
             break;
 
-            case '5':
-            {
+            case '5':{
                 cout << "\n\n";
                 cout << "\t\t";
                 cout << "\n\n";
