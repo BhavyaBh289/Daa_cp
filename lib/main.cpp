@@ -118,8 +118,11 @@ public:
     void insert(student k);
 
     void remove(student k);
-
+    void saveToFile(const string& filename) const;
+    void saveNodeToFile(ofstream& file, BTreeNode* node) const;
+    void loadFromFile(const string& filename);
     BTreeNode *searchh(int key);
+    BTreeNode* loadNodeFromFile(ifstream& file);
 };
 
 BTreeNode::BTreeNode(int t1, bool leaf1){
@@ -488,6 +491,61 @@ void BTree::remove(student k){
     return;
 }
 
+///saving BTree
+void BTree::saveToFile(const string& filename) const {
+    ofstream file(filename, ios::binary);
+    if (!file.is_open()) {
+        cerr << "Error opening file for writing: " << filename << endl;
+        return;
+    }
+
+    // Write B-tree parameters
+    file.write(reinterpret_cast<const char*>(&t), sizeof(t));
+
+    // Serialize and write the root node
+    saveNodeToFile(file, root);
+
+    file.close();
+}
+
+void BTree::saveNodeToFile(ofstream& file, BTreeNode* node) const {
+    if (!node) return;
+
+    file.write(reinterpret_cast<const char*>(node), sizeof(BTreeNode));
+
+    // Recursively save child nodes
+    for (int i = 0; i <= node->n; ++i) {
+        saveNodeToFile(file, node->C[i]);
+    }
+}
+///loading btree
+void BTree::loadFromFile(const string& filename) {
+    ifstream file(filename, ios::binary);
+    if (!file.is_open()) {
+        cerr << "Error opening file for reading: " << filename << endl;
+        return;
+    }
+
+    file.read(reinterpret_cast<char*>(&t), sizeof(t));
+
+    root = loadNodeFromFile(file);
+
+    file.close();
+}
+
+BTreeNode* BTree::loadNodeFromFile(ifstream& file) {
+    if (!file.good()) return nullptr;
+
+    BTreeNode* node = new BTreeNode(t, false);
+    file.read(reinterpret_cast<char*>(node), sizeof(BTreeNode));
+
+    // Recursively load child nodes
+    for (int i = 0; i <= node->n; ++i) {
+        node->C[i] = loadNodeFromFile(file);
+    }
+
+    return node;
+}
 
 
 int main(){
@@ -505,6 +563,17 @@ int main(){
     while (1){
         if (isLoggedIn == true or auth.login_status() == true){
             isLoggedIn = true;
+            BTree t(3);
+            ifstream file;
+            file.open("btree.dat");
+            if (file){
+                file.close();
+                t.loadFromFile("btree.dat");
+            }else{
+                file.close();
+                cout << "File does not exists" << endl;
+            }
+
             cout << "\t\t====== STUDENT DATABASE MANAGEMENT SYSTEM ======";
             cout << "\n\n                                          ";
             cout << "\n \t\t\t 0. Search Record";
@@ -601,6 +670,7 @@ int main(){
             }
             break;
             }
+            t.saveToFile("btree.dat");
         }
     }
 
