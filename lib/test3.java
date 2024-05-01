@@ -6,6 +6,9 @@ class Student {
         this.id = id;
         this.name = name;
     }
+    public static void show(Student s){
+    System.out.println("Student's name is "+s.name);
+    }
 }
 
 class BTree {
@@ -36,6 +39,10 @@ class BTree {
     }
 
     private Node root;
+    public Student Search(int key){
+        Node c=root;
+        return Search(c,key);
+    }
 
     // Search key
     private Student Search(Node x, int key) {
@@ -156,7 +163,10 @@ class BTree {
 }
 public class test3{
     public static void main(String[] args) {
-        BTree b = new BTree(3);
+        BTree tree = new BTree(3);
+        tree.Insert(10, new Student(1, "Alice"));
+        tree.Insert(20, new Student(2, "Bob"));
+        Student.show(tree.Search(10));
     }
 }
 
