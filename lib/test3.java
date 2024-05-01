@@ -1,4 +1,6 @@
-class Student {
+import java.io.*;
+
+class Student implements Serializable{
     int id;
     String name;
 
@@ -11,10 +13,10 @@ class Student {
     }
 }
 
-class BTree {
+class BTree implements Serializable{
 
     private int T;
-    public class Node {
+    public class Node implements Serializable {
         int n;
         Student students[] = new Student[2 * T - 1];
         int key[] = new int[2 * T - 1];
@@ -39,10 +41,6 @@ class BTree {
     }
 
     private Node root;
-    public Student Search(int key){
-        Node c=root;
-        return Search(c,key);
-    }
 
     // Search key
     private Student Search(Node x, int key) {
@@ -157,8 +155,27 @@ class BTree {
     }
 
     // Check if present
-    public Student Contain(int k) {
+    public Student Search(int k) {
         return Search(root, k);
+    }
+
+    public void saveToFile(String filename) {
+        try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename))) {
+            out.writeObject(this);
+            System.out.println("BTree saved successfully to " + filename);
+        } catch (IOException e) {
+            System.err.println("Error saving BTree to" + filename+" file: " + e.getMessage());
+        }
+    }
+     public static BTree loadFromFile(String filename) {
+        try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(filename))) {
+            BTree tree = (BTree) in.readObject();
+            System.out.println("BTree loaded successfully from " + filename);
+            return tree;
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error loading BTree from file: " + e.getMessage());
+            return null;
+        }
     }
 }
 public class test3{
@@ -167,6 +184,9 @@ public class test3{
         tree.Insert(10, new Student(1, "Alice"));
         tree.Insert(20, new Student(2, "Bob"));
         Student.show(tree.Search(10));
+        tree.saveToFile("btree_data.ser");
+        BTree loadedTree = BTree.loadFromFile("btree_data.ser");
+        Student.show(loadedTree.Search(10));
     }
 }
 
